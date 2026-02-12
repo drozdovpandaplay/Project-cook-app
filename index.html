@@ -32,9 +32,9 @@
     </header>
 
     <section class="mb-10 bg-white rounded-[32px] p-6 card-shadow border border-gray-100">
-        <h2 class="text-sm font-bold text-gray-800 mb-4">Добавить продукт</h2>
+        <h2 class="text-sm font-bold text-gray-800 mb-4">Добавить ингредиент</h2>
         <div class="space-y-4">
-            <input id="prod-name" type="text" placeholder="Название (например, Сыр)" 
+            <input id="prod-name" type="text" placeholder="Название (например, Томаты)" 
                 class="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-gray-700">
 
             <div class="flex gap-3">
@@ -51,9 +51,9 @@
     </section>
 
     <section>
-        <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest">Ваш список</h2>
+        <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest">Текущие ингредиенты</h2>
         <div id="product-list" class="space-y-3">
-            <p class="text-center py-10 text-gray-400 text-sm">Синхронизация...</p>
+            <p class="text-center py-10 text-gray-400 text-sm">Синхронизация с облаком...</p>
         </div>
     </section>
 
@@ -62,7 +62,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M13.35 21l1.65-8.55h5.55L8.25 3l-1.65 8.55H1.05L13.35 21z" fill="currentColor"/>
             </svg>
-            Открыть панель управления базой
+            Посмотреть ингредиенты в облаке
         </button>
     </section>
 
@@ -70,14 +70,14 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // КОНФИГУРАЦИЯ
+        // КОНФИГУРАЦИЯ SUPABASE
         const SUPABASE_URL = 'https://fwgxtjkqmslbmnecfhwj.supabase.co';
         const SUPABASE_KEY = 'Sb_publishable_27NdQpJDXhOWC_Y7kzNn7A__xs0jCUi';
         const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const userId = tg.initDataUnsafe?.user?.id?.toString() || "local_user";
 
-        // Загрузка
+        // Загрузка данных
         async function loadData() {
             const listDiv = document.getElementById('product-list');
             const { data, error } = await supabase
@@ -89,11 +89,11 @@
             if (!error) {
                 renderUI(data);
             } else {
-                listDiv.innerHTML = '<p class="text-center text-red-400">Ошибка связи с облаком</p>';
+                listDiv.innerHTML = '<p class="text-center text-red-400">Ошибка связи с базой</p>';
             }
         }
 
-        // Сохранение
+        // Сохранение ингредиента
         async function saveToCloud() {
             const name = document.getElementById('prod-name').value;
             const weight = document.getElementById('prod-weight').value;
@@ -136,14 +136,14 @@
             }
         }
 
-        // Отрисовка
+        // Отрисовка интерфейса
         function renderUI(products) {
             const listDiv = document.getElementById('product-list');
             const totalSpan = document.getElementById('header-total');
             let total = 0;
 
             if (products.length === 0) {
-                listDiv.innerHTML = '<p class="text-center py-10 text-gray-400 italic text-sm">В базе пока пусто...</p>';
+                listDiv.innerHTML = '<p class="text-center py-10 text-gray-400 italic text-sm">В облаке пока нет ингредиентов...</p>';
                 totalSpan.innerText = '0 ₽';
                 return;
             }
@@ -168,189 +168,14 @@
             totalSpan.innerText = total.toLocaleString() + ' ₽';
         }
 
-        // Ссылка на базу
-       6969🦴, [12.02.2026 15:45]
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>projectCook - Cloud Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; padding-bottom: 40px; }
-        .tg-button { background-color: #007aff; color: white; transition: opacity 0.2s; }
-        .tg-button:active { opacity: 0.8; }
-        .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
-        .animate-fade { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
-<body class="p-4">
-
-    <header class="flex justify-between items-center mb-8 px-1">
-        <div>
-            <h1 class="text-2xl font-black text-gray-900 tracking-tight">projectCook</h1>
-            <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Supabase Connected ☁️</p>
-        </div>
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-right">
-            <span class="text-lg font-black text-gray-900" id="total-cost">0 ₽</span>
-        </div>
-    </header>
-
-    <section class="mb-10 bg-white rounded-[32px] p-6 card-shadow border border-gray-100">
-        <div class="space-y-4">
-            <input id="prod-name" type="text" placeholder="Название продукта" 
-                class="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-medium">
-            
-            <div class="flex gap-3">
-                <input id="prod-weight" type="number" placeholder="Вес (г)" 
-                    class="w-1/2 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold">
-                <input id="prod-price" type="number" placeholder="Цена (₽)" 
-                    class="w-1/2 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600">
-            </div>
-
-            <button onclick="saveToCloud()" id="add-btn" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-lg">
-                Добавить в базу
-            </button>
-        </div>
-    </section>
-
-    <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest text-center">Ваш облачный инвентарь</h2>
-    <div id="product-list" class="space-y-3">
-        </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // ИНИЦИАЛИЗАЦИЯ SUPABASE
-        const SUPABASE_URL = 'https://fwgxtjkqmslbmnecfhwj.supabase.co';
-        const SUPABASE_KEY = 'Sb_publishable_27NdQpJDXhOWC_Y7kzNn7A__xs0jCUi';
-        const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // Получаем ID пользователя Telegram для фильтрации данных
-        const userId = tg.initDataUnsafe?.user?.id?.toString() || "local_user";
-
-        // Функция загрузки данных
-        async function loadData() {
-            const listDiv = document.getElementById('product-list');
-            
-            const { data, error } = await supabase
-                .from('продукты')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error(error);
-                listDiv.innerHTML = '<p class="text-center text-red-400">Ошибка загрузки базы</p>';
-                return;
-            }
-
-            renderProducts(data);
+        // Прямой переход в таблицу ингредиентов
+        function openSupabase() {
+            const url = 'https://supabase.com/dashboard/project/fwgxtjkqmslbmnecfhwj/editor';
+            tg.openLink(url);
         }
 
-6969🦴, [12.02.2026 15:45]
-// Функция сохранения
-        async function saveToCloud() {
-            const btn = document.getElementById('add-btn');
-            const name = document.getElementById('prod-name').value;
-            const weight = document.getElementById('prod-weight').value;
-            const price = document.getElementById('prod-price').value;
-
-            if (!name  !price  !weight) {
-                tg.showAlert("Заполните все поля! 👨‍🍳");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = "Сохранение...";
-
-            const price100 = ((price / weight) * 100).toFixed(2);
-
-            const { error } = await supabase
-                .from('продукты')
-                .insert([{
-                    user_id: userId,
-                    name: name,
-                    weight: parseFloat(weight),
-                    price: parseFloat(price),
-                    price100: parseFloat(price100)
-                }]);
-
-            if (error) {
-                tg.showAlert("Ошибка базы: " + error.message);
-            } else {
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-weight').value = '';
-                document.getElementById('prod-price').value = '';
-                tg.HapticFeedback.notificationOccurred('success');
-                await loadData();
-            }
-
-            btn.disabled = false;
-            btn.innerText = "Добавить в базу";
-        }
-
-        // Удаление
-        async function deleteProduct(id) {
-            const { error } = await supabase.from('продукты').delete().eq('id', id);
-            if (!error) {
-                tg.HapticFeedback.impactOccurred('medium');
-                loadData();
-            }
-        }
-
-        // Отрисовка
-        function renderProducts(products) {
-            const listDiv = document.getElementById('product-list');
-            const totalCostSpan = document.getElementById('total-cost');
-            let total = 0;
-
-            if (products.length === 0) {
-                listDiv.innerHTML = '<p class="text-center text-gray-400 py-10 italic text-sm">В облаке пока пусто...</p>';
-                totalCostSpan.innerText = '0 ₽';
-                return;
-            }
-
-            listDiv.innerHTML = '';
-            products.forEach(item => {
-                total += parseFloat(item.price);
-                const card = document.createElement('div');
-                card.className = "flex justify-between items-center p-4 bg-white rounded-2xl card-shadow border border-gray-50 animate-fade";
-                card.innerHTML = 
-                    <div>
-                        <h3 class="font-bold text-gray-800">${item.name}</h3>
-                        <p class="text-[10px] text-gray-400 uppercase font-bold">${item.weight}г • ${item.price100}₽/100г</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-black text-gray-900">${item.price} ₽</p>
-                        <button onclick="deleteProduct('${item.id}')" class="text-[10px] text-red-300 font-bold hover:text-red-500">Удалить</button>
-                    </div>
-                ;
-                listDiv.appendChild(card);
-            });
-
-            totalCostSpan.innerText = total.toLocaleString() + ' ₽';
-        }
-
-        // Запуск при загрузке страницы
         loadData();
     </script>
 </body>
 </html>
 
-6969🦴, [12.02.2026 15:59]
-function openSupabase() {
-    // URL, который ведет сразу в редактор таблицы 'продукты'
-    const url = 'https://supabase.com/dashboard/project/fwgxtjkqmslbmnecfhwj/editor/products'; 
-    
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openLink(url);
-    } else {
-        window.open(url, '_blank');
-    }
-}
