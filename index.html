@@ -3,68 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>projectCook - Cloud Stable</title>
+    <title>projectCook - MultiPage Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; padding-bottom: 90px; }
-        .tg-button { background-color: #007aff; color: white; transition: all 0.2s; }
-        .tg-button:active { transform: scale(0.98); opacity: 0.9; }
-        .tab-active { color: #007aff; border-bottom: 3px solid #007aff; }
-        .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
-        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 12px; z-index: 100; }
-        .animate-item { animation: slideUp 0.3s ease-out forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; }
+        .page { display: none; padding-bottom: 30px; }
+        .page-active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .menu-card { background: white; border-radius: 24px; padding: 20px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: transform 0.1s; }
+        .menu-card:active { transform: scale(0.95); background: #f1f5f9; }
+        .tg-btn { background: #007aff; color: white; font-weight: bold; border-radius: 16px; padding: 14px; width: 100%; transition: opacity 0.2s; }
+        .tg-btn:disabled { opacity: 0.5; }
     </style>
 </head>
-<body class="p-4 select-none">
+<body class="p-4">
 
-    <header class="flex items-center justify-between mb-6 px-1">
-        <div>
-            <h1 class="text-2xl font-black text-gray-900 tracking-tight">projectCook</h1>
-            <p id="sub-title" class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Connected ☁️</p>
-        </div>
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-right">
-            <p class="text-[9px] text-gray-400 uppercase font-bold">Общая сумма</p>
-            <span class="text-lg font-black text-gray-900" id="total-val">0 ₽</span>
-        </div>
-    </header>
+    <main id="page-main" class="page page-active">
+        <header class="mb-8 mt-4 text-center">
+            <h1 class="text-3xl font-black text-gray-900 tracking-tighter">projectCook</h1>
+            <p class="text-blue-500 font-bold text-[10px] uppercase tracking-widest mt-1">Центр управления кухней</p>
+        </header>
 
-    <main id="tab-ingredients">
-        <section class="mb-8 bg-white rounded-[32px] p-6 card-shadow border border-gray-100">
-            <h2 class="text-sm font-bold text-gray-800 mb-4">Добавить новый продукт</h2>
-            <div class="space-y-4">
-                <input id="prod-name" type="text" placeholder="Название (например, Лук)" class="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-medium">
-                <div class="flex gap-3">
-                    <input id="prod-unit" type="text" placeholder="Ед. (кг/шт)" class="w-1/3 p-4 bg-gray-50 border-none rounded-2xl outline-none">
-                    <input id="prod-price" type="number" placeholder="Цена (₽)" class="w-2/3 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold text-blue-600">
-                </div>
-                <button onclick="saveIngredient()" id="add-btn" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-lg">Добавить в базу</button>
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="nav('warehouse')" class="menu-card">
+                <span class="text-3xl block mb-2">📦</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Склад</span>
+            </button>
+            <button onclick="nav('ingredients')" class="menu-card">
+                <span class="text-3xl block mb-2">🥕</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Продукты</span>
+            </button>
+            <button onclick="nav('recipes')" class="menu-card">
+                <span class="text-3xl block mb-2">📖</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Рецепты</span>
+            </button>
+            <button onclick="nav('shopping')" class="menu-card">
+                <span class="text-3xl block mb-2">🛒</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Покупки</span>
+            </button>
+        </div>
+        
+        <div class="mt-8 bg-blue-50 p-6 rounded-[32px] border border-blue-100">
+            <h3 class="font-bold text-blue-900 text-sm mb-2">Статистика облака</h3>
+            <p class="text-[11px] text-blue-700 font-medium">Ваша база Supabase подключена и синхронизирована.</p>
+        </div>
+    </main>
+
+    <main id="page-warehouse" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Назад</button>
+        <h2 class="text-2xl font-black mb-6">Склад</h2>
+        <div id="warehouse-list" class="space-y-3"></div>
+    </main>
+
+    <main id="page-ingredients" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Назад</button>
+        <h2 class="text-2xl font-black mb-4">Ингредиенты</h2>
+        
+        <div class="bg-white p-5 rounded-3xl border mb-6">
+            <input id="ing-name" type="text" placeholder="Название" class="w-full mb-3 p-3 bg-gray-50 rounded-xl outline-none">
+            <div class="flex gap-2 mb-3">
+                <input id="ing-price" type="number" placeholder="Цена ₽" class="w-1/2 p-3 bg-gray-50 rounded-xl outline-none">
+                <input id="ing-unit" type="text" placeholder="Ед. (кг/шт)" class="w-1/2 p-3 bg-gray-50 rounded-xl outline-none">
             </div>
-        </section>
-
-        <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest text-center">Список продуктов из Supabase</h2>
-        <div id="ingredient-list" class="space-y-3">
-            <p class="text-center py-10 text-gray-400 text-sm italic">Загрузка данных...</p>
+            <button onclick="addIngredient()" class="tg-btn">Добавить в базу</button>
         </div>
+        
+        <div id="ingredients-list" class="space-y-3"></div>
     </main>
 
-    <main id="tab-recipes" class="hidden">
-        <section class="mb-8 bg-white rounded-[32px] p-6 card-shadow border border-gray-100">
-            <h2 class="text-sm font-bold text-gray-800 mb-4 text-center italic">Раздел рецептов скоро появится...</h2>
-        </section>
-        <div id="recipe-list" class="space-y-3"></div>
+    <main id="page-recipes" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Назад</button>
+        <h2 class="text-2xl font-black mb-6">Рецепты</h2>
+        <div id="recipes-list" class="space-y-4"></div>
     </main>
 
-    <nav class="nav-bar">
-        <button onclick="showTab('ingredients')" id="btn-ing" class="text-[10px] font-bold uppercase tab-active flex flex-col items-center gap-1">
-            <span>🍎</span> Продукты
-        </button>
-        <button onclick="showTab('recipes')" id="btn-rec" class="text-[10px] font-bold uppercase text-gray-400 flex flex-col items-center gap-1">
-            <span>📖</span> Рецепты
-        </button>
-    </nav>
+    <main id="page-shopping" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Назад</button>
+        <h2 class="text-2xl font-black mb-6">Список покупок</h2>
+        <div id="shopping-list" class="space-y-3"></div>
+    </main>
+
+    <main id="page-recipe-detail" class="page">
+        <button onclick="nav('recipes')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← К списку рецептов</button>
+        <div id="recipe-content"></div>
+    </main>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -74,97 +98,103 @@
         const SUPABASE_KEY = 'Sb_publishable_27NdQpJDXhOWC_Y7kzNn7A__xs0jCUi';
         const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function showTab(tab) {
-            document.getElementById('tab-ingredients').classList.toggle('hidden', tab !== 'ingredients');
-            document.getElementById('tab-recipes').classList.toggle('hidden', tab !== 'recipes');
-            document.getElementById('btn-ing').classList.toggle('tab-active', tab === 'ingredients');
-            document.getElementById('btn-rec').classList.toggle('tab-active', tab === 'recipes');
-            if(tab === 'ingredients') loadIngredients();
+        // НАВИГАЦИЯ
+        function nav(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+            document.getElementById('page-' + pageId).classList.add('page-active');
+            
+            if(pageId === 'warehouse') loadWarehouse();
+            if(pageId === 'ingredients') loadIngredients();
+            if(pageId === 'recipes') loadRecipes();
+            if(pageId === 'shopping') loadShopping();
         }
 
+        // 1. СКЛАД
+        async function loadWarehouse() {
+            const { data } = await supabase.from('инвентарь').select('*');
+            const list = document.getElementById('warehouse-list');
+            list.innerHTML = data?.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex justify-between items-center">
+                    <div><p class="font-bold">${item.название}</p><p class="text-xs text-gray-400">В наличии: ${item.количество} ${item.ед_изм || ''}</p></div>
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">${item.количество > 0 ? 'Есть' : 'Нет'}</span>
+                </div>
+            `).join('') || '<p class="text-center text-gray-400">Склад пуст</p>';
+        }
+
+        // 2. ИНГРЕДИЕНТЫ
         async function loadIngredients() {
-            const list = document.getElementById('ingredient-list');
+            const { data } = await supabase.from('products').select('*').order('name', {ascending: true});
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = data?.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex justify-between items-center">
+                    <div><p class="font-bold">${item.name}</p><p class="text-xs text-gray-400">${item.unit || ''}</p></div>
+                    <p class="font-black text-blue-600">${item.price} ₽</p>
+                </div>
+            `).join('') || '';
+        }
+
+        async function addIngredient() {
+            const name = document.getElementById('ing-name').value;
+            const price = document.getElementById('ing-price').value;
+            const unit = document.getElementById('ing-unit').value;
+            if(!name || !price) return;
+            await supabase.from('products').insert([{ name, price: parseFloat(price), unit }]);
+            loadIngredients();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // 3. РЕЦЕПТЫ
+        async function loadRecipes() {
+            const { data } = await supabase.from('recipes').select('*');
+            const list = document.getElementById('recipes-list');
+            list.innerHTML = data?.map(rec => `
+                <div onclick="openRecipe('${rec.id}')" class="p-5 bg-white rounded-3xl border shadow-sm">
+                    <h3 class="font-black text-lg text-gray-800">${rec.name || rec.название}</h3>
+                    <p class="text-sm text-gray-400 mt-1 line-clamp-2">${rec.description || rec.описание || ''}</p>
+                    <div class="mt-3 flex items-center text-blue-500 text-xs font-bold">Смотреть рецепт →</div>
+                </div>
+            `).join('') || '';
+        }
+
+        // 5. ПОЛНЫЙ РЕЦЕПТ
+        async function openRecipe(id) {
+            nav('recipe-detail');
+            const { data: rec } = await supabase.from('recipes').select('*').eq('id', id).single();
+            const { data: ingrs } = await supabase.from('recipe_ingredients').select('*').eq('recipe_id', id);
             
-            // УБРАЛИ фильтр по user_id, так как этой колонки нет в вашей базе
-            const { data, error } = await supabase
-                .from('products')
-                .select('id, name, price, unit, category')
-                .order('name', { ascending: true });
-
-            if (error) {
-                list.innerHTML = `<p class="text-center text-red-500 p-4">Ошибка: ${error.message}</p>`;
-                return;
-            }
-            renderIngredients(data || []);
+            const content = document.getElementById('recipe-content');
+            content.innerHTML = `
+                <h2 class="text-3xl font-black mb-4">${rec.name || rec.название}</h2>
+                <div class="bg-blue-50 p-5 rounded-3xl mb-6">
+                    <h4 class="font-bold text-xs uppercase text-blue-500 mb-3">Ингредиенты:</h4>
+                    <ul class="space-y-2">
+                        ${ingrs?.map(i => `<li class="text-sm flex justify-between border-b border-blue-100 pb-1">
+                            <span>${i.ingredient_name}</span>
+                            <span class="font-bold">${i.amount}</span>
+                        </li>`).join('') || 'Не указаны'}
+                    </ul>
+                </div>
+                <h4 class="font-bold text-xs uppercase text-gray-400 mb-2">Инструкция:</h4>
+                <p class="text-gray-700 leading-relaxed">${rec.instructions || rec.описание || 'Инструкция скоро появится...'}</p>
+            `;
         }
 
-        async function saveIngredient() {
-            const btn = document.getElementById('add-btn');
-            const name = document.getElementById('prod-name').value;
-            const unit = document.getElementById('prod-unit').value;
-            const price = document.getElementById('prod-price').value;
-
-            if(!name || !price) return tg.showAlert("Заполните Название и Цену!");
-
-            btn.disabled = true;
-            btn.innerText = "Сохранение...";
-
-            // Сохраняем в таблицу products (убрали user_id)
-            const { error } = await supabase.from('products').insert([{ 
-                name: name, 
-                price: parseFloat(price), 
-                unit: unit 
-            }]);
-
-            if (error) {
-                tg.showAlert("Ошибка сохранения: " + error.message);
-            } else {
-                document.getElementById('prod-name').value = '';
-                document.getElementById('prod-unit').value = '';
-                document.getElementById('prod-price').value = '';
-                loadIngredients();
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            btn.disabled = false;
-            btn.innerText = "Добавить в базу";
+        // 4. ПОКУПКИ
+        async function loadShopping() {
+            const { data } = await supabase.from('список покупок').select('*');
+            const list = document.getElementById('shopping-list');
+            list.innerHTML = data?.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex items-center gap-3">
+                    <input type="checkbox" class="w-5 h-5 accent-blue-500">
+                    <span class="font-medium">${item.продукт}</span>
+                    <span class="ml-auto text-xs text-gray-400">${item.количество || ''}</span>
+                </div>
+            `).join('') || '<p class="text-center text-gray-400">Список пуст</p>';
         }
 
-        function renderIngredients(items) {
-            const list = document.getElementById('ingredient-list');
-            let total = 0;
-            list.innerHTML = items.length === 0 ? '<p class="text-center py-10 text-gray-400 italic">База пуста</p>' : '';
-            
-            items.forEach(item => {
-                total += parseFloat(item.price || 0);
-                list.innerHTML += `
-                <div class="flex justify-between items-center p-4 bg-white rounded-2xl card-shadow border border-gray-50 animate-item">
-                    <div>
-                        <h3 class="font-bold text-gray-800">${item.name}</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">${item.unit || ''} ${item.category ? '• ' + item.category : ''}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-black text-gray-900">${item.price} ₽</p>
-                        <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-300 font-bold">Удалить</button>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('total-val').innerText = total.toLocaleString() + ' ₽';
-        }
-
-        async function deleteItem(id) {
-            const { error } = await supabase.from('products').delete().eq('id', id);
-            if(!error) {
-                loadIngredients();
-                tg.HapticFeedback.impactOccurred('medium');
-            } else {
-                tg.showAlert("Ошибка удаления: " + error.message);
-            }
-        }
-
-        // Запуск при старте
-        loadIngredients();
+        // Старт
+        nav('main');
     </script>
 </body>
 </html>
-
 
