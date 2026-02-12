@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>projectCook - Smart Kitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { 
+            background-color: #f8fafc; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding-bottom: 40px;
+        }
+        .tg-button { background-color: #007aff; color: white; transition: all 0.2s; }
+        .tg-button:active { transform: scale(0.98); opacity: 0.9; }
+        .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+        
+        /* Анимация для новых элементов */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-item { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="p-4 select-none">
+
+    <header class="flex items-center justify-between mb-8 px-1">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight">projectCook</h1>
+            <p class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Digital Fridge v1.0</p>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-right">
+            <p class="text-[10px] text-gray-400 uppercase font-bold">Итого в базе</p>
+            <span class="text-lg font-black text-gray-900" id="header-total">0 ₽</span>
+        </div>
+    </header>
+
+    <section class="mb-10">
+        <div class="bg-white rounded-[32px] p-6 card-shadow border border-gray-50">
+            <h2 class="text-sm font-bold text-gray-800 mb-4">Добавить продукт</h2>
+            <div class="space-y-4">
+                <input id="prod-name" type="text" placeholder="Название (например, Лосось)" 
+                    class="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-medium text-gray-700">
+
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <input id="prod-weight" type="number" placeholder="Вес (г)" 
+                            class="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold">
+                    </div>
+                    <div class="flex-1">
+                        <input id="prod-price" type="number" placeholder="Цена (₽)" 
+                            class="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600">
+                    </div>
+                </div>
+
+                <div id="calc-preview" class="hidden flex items-center justify-between p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <span class="text-sm text-blue-500 font-medium">Цена за 100г:</span>
+                    <span id="price-100-val" class="text-lg font-black text-blue-700">0 ₽</span>
+                </div>
+
+                <button onclick="addProduct()" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-blue-200 shadow-lg mt-2">
+                    Внести в список
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="flex items-center justify-between mb-4 px-2">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Мой арсенал</h2>
+            <button onclick="clearAll()" class="text-xs text-red-400 font-bold hover:text-red-600 transition-colors">Очистить всё</button>
+        </div>
+        
+        <div id="inventory-list" class="space-y-3">
+            </div>
+
+        <div id="empty-state" class="text-center py-10">
+            <div class="text-4xl mb-2">🥗</div>
+            <p class="text-gray-400 text-sm">Ваш холодильник пока пуст.<br>Добавьте первый продукт!</p>
+        </div>
+    </section>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран в Telegram
+        tg.ready();
+
+        // Загружаем данные из памяти телефона
+        let inventory = JSON.parse(localStorage.getItem('projectCook_storage')) || [];
+
+        // Функция обновления экрана
+        function updateUI() {
+            const list = document.getElementById('inventory-list');
+            const headerTotal = document.getElementById('header-total');
+            const emptyState = document.getElementById('empty-state');
+            let total = 0;
+
+            list.innerHTML = '';
+            
+            if (inventory.length > 0) {
+                emptyState.classList.add('hidden');
+            } else {
+                emptyState.classList.remove('hidden');
+            }
+
+            inventory.forEach((item, index) => {
+                total += parseFloat(item.price);
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-4 bg-white rounded-2xl card-shadow border border-gray-50 animate-item";
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-xl">🍽️</div>
+                        <div>
+                            <h3 class="font-bold text-gray-800">${item.name}</h3>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">${item.weight}г • ${item.price100} ₽/100г</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                        <p class="font-black text-gray-900">${item.price} ₽</p>
+                        <button onclick="deleteItem(${index})" class="text-[10px] text-red-300 font-bold mt-1">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            headerTotal.innerText = total.toLocaleString() + ' ₽';
+            // Сохраняем данные, чтобы они не пропали после закрытия
+            localStorage.setItem('projectCook_storage', JSON.stringify(inventory));
+        }
+
+        // Функция добавления продукта
+        function addProduct() {
+            const name = document.getElementById('prod-name').value;
+            const weight = document.getElementById('prod-weight').value;
+            const price = document.getElementById('prod-price').value;
+            
+            if (name && weight > 0 && price > 0) {
+                const price100 = (price / weight) * 100;
+
+                inventory.unshift({
+                    name: name,
+                    weight: weight,
+                    price: parseFloat(price).toFixed(2),
+                    price100: price100.toFixed(2)
+                });
+
+                // Очистка формы
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-weight').value = '';
+                document.getElementById('prod-price').value = '';
+                document.getElementById('calc-preview').classList.add('hidden');
+                
+                // Легкая вибрация телефона (Telegram фишка)
+                tg.HapticFeedback.impactOccurred('medium');
+                
+                updateUI();
+            } else {
+                tg.showAlert("Заполните все поля корректно! 👨‍🍳");
+            }
+        }
+
+        // Живой расчет цены "на лету"
+        function liveCalc() {
+            const w = document.getElementById('prod-weight').value;
+            const p = document.getElementById('prod-price').value;
+            const preview = document.getElementById('calc-preview');
+            const val = document.getElementById('price-100-val');
+
+            if (w > 0 && p > 0) {
+                const res = (p / w) * 100;
+                val.innerText = res.toFixed(2) + ' ₽';
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+
+        // Слушатели ввода для калькулятора
+        document.getElementById('prod-weight').addEventListener('input', liveCalc);
+        document.getElementById('prod-price').addEventListener('input', liveCalc);
+
+        // Удаление одного продукта
+        function deleteItem(index) {
+            inventory.splice(index, 1);
+            tg.HapticFeedback.impactOccurred('light');
+            updateUI();
+        }
+
+        // Полная очистка
+        function clearAll() {
+            tg.showConfirm("Вы уверены, что хотите очистить весь список?", (confirmed) => {
+                if (confirmed) {
+                    inventory = [];
+                    updateUI();
+                }
+            });
+        }
+
+        // Запуск при старте
+        updateUI();
+    </script>
+</body>
+</html>
