@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>projectCook - Final Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; }
+        .page { display: none; padding-bottom: 30px; }
+        .page-active { display: block; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .menu-card { background: white; border-radius: 24px; padding: 20px; text-align: center; border: 1px solid #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
+        .menu-card:active { transform: scale(0.95); background: #f1f5f9; }
+        .tg-btn { background: #007aff; color: white; font-weight: bold; border-radius: 16px; padding: 14px; width: 100%; }
+    </style>
+</head>
+<body class="p-4">
+
+    <main id="page-main" class="page page-active">
+        <header class="mb-8 mt-4 text-center">
+            <h1 class="text-3xl font-black text-gray-900 tracking-tighter">projectCook</h1>
+            <p class="text-blue-500 font-bold text-[10px] uppercase tracking-widest mt-1">Система синхронизирована ☁️</p>
+        </header>
+
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="nav('warehouse')" class="menu-card">
+                <span class="text-3xl block mb-2">📦</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Склад</span>
+            </button>
+            <button onclick="nav('ingredients')" class="menu-card">
+                <span class="text-3xl block mb-2">🥕</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Продукты</span>
+            </button>
+            <button onclick="nav('recipes')" class="menu-card">
+                <span class="text-3xl block mb-2">📖</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Рецепты</span>
+            </button>
+            <button onclick="nav('shopping')" class="menu-card">
+                <span class="text-3xl block mb-2">🛒</span>
+                <span class="text-xs font-bold uppercase text-gray-700">Покупки</span>
+            </button>
+        </div>
+    </main>
+
+    <main id="page-warehouse" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Меню</button>
+        <h2 class="text-2xl font-black mb-6">Склад (Инвентарь)</h2>
+        <div id="warehouse-list" class="space-y-3"></div>
+    </main>
+
+    <main id="page-ingredients" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Меню</button>
+        <h2 class="text-2xl font-black mb-4">База продуктов</h2>
+        
+        <div class="bg-white p-5 rounded-3xl border mb-6">
+            <input id="ing-name" type="text" placeholder="Название" class="w-full mb-3 p-3 bg-gray-50 rounded-xl outline-none">
+            <div class="flex gap-2 mb-3">
+                <input id="ing-price" type="number" placeholder="Цена ₽" class="w-1/2 p-3 bg-gray-50 rounded-xl outline-none">
+                <input id="ing-unit" type="text" placeholder="кг/шт" class="w-1/2 p-3 bg-gray-50 rounded-xl outline-none">
+            </div>
+            <button onclick="addIngredient()" class="tg-btn">Добавить</button>
+        </div>
+        <div id="ingredients-list" class="space-y-3"></div>
+    </main>
+
+    <main id="page-recipes" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Меню</button>
+        <h2 class="text-2xl font-black mb-6">Ваши рецепты</h2>
+        <div id="recipes-list" class="space-y-4"></div>
+    </main>
+
+    <main id="page-recipe-detail" class="page">
+        <button onclick="nav('recipes')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← К рецептам</button>
+        <div id="recipe-content"></div>
+    </main>
+
+    <main id="page-shopping" class="page">
+        <button onclick="nav('main')" class="text-blue-500 font-bold text-sm mb-6 flex items-center gap-1">← Меню</button>
+        <h2 class="text-2xl font-black mb-6">Список покупок</h2>
+        <div id="shopping-list" class="space-y-3"></div>
+    </main>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const SUPABASE_URL = 'https://fwgxtjkqmslbmnecfhwj.supabase.co';
+        const SUPABASE_KEY = 'Sb_publishable_27NdQpJDXhOWC_Y7kzNn7A__xs0jCUi';
+        const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function nav(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('page-active'));
+            document.getElementById('page-' + pageId).classList.add('page-active');
+            
+            if(pageId === 'warehouse') loadData('инвентарь', renderWarehouse);
+            if(pageId === 'ingredients') loadData('products', renderIngredients);
+            if(pageId === 'recipes') loadData('Рецепты', renderRecipes);
+            if(pageId === 'shopping') loadData('список покупок', renderShopping);
+        }
+
+        async function loadData(table, renderFunc) {
+            const { data, error } = await supabase.from(table).select('*');
+            if (error) {
+                tg.showAlert("Ошибка таблицы " + table + ": " + error.message);
+                return;
+            }
+            renderFunc(data);
+        }
+
+        // Рендер Склада
+        function renderWarehouse(data) {
+            const list = document.getElementById('warehouse-list');
+            list.innerHTML = data.length ? data.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex justify-between items-center">
+                    <div><p class="font-bold">${item.название || 'Без имени'}</p><p class="text-xs text-gray-400">${item.количество || 0} ${item.ед_изм || ''}</p></div>
+                </div>
+            `).join('') : '<p class="text-center text-gray-400">Пусто</p>';
+        }
+
+        // Рендер Ингредиентов
+        function renderIngredients(data) {
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = data.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex justify-between items-center">
+                    <div><p class="font-bold">${item.name}</p><p class="text-xs text-gray-400">${item.unit || ''}</p></div>
+                    <p class="font-black text-blue-600">${item.price} ₽</p>
+                </div>
+            `).join('');
+        }
+
+        // Рендер Рецептов
+        function renderRecipes(data) {
+            const list = document.getElementById('recipes-list');
+            list.innerHTML = data.map(rec => `
+                <div onclick="openRecipe('${rec.id}')" class="p-5 bg-white rounded-3xl border">
+                    <h3 class="font-black text-lg">${rec.название || 'Без названия'}</h3>
+                    <p class="text-sm text-gray-400 mt-1 line-clamp-2">${rec.описание || ''}</p>
+                    <div class="mt-3 text-blue-500 text-xs font-bold uppercase">Открыть →</div>
+                </div>
+            `).join('');
+        }
+
+        async function openRecipe(id) {
+            nav('recipe-detail');
+            const { data: rec } = await supabase.from('Рецепты').select('*').eq('id', id).single();
+            const { data: ingrs } = await supabase.from('рецепт_ингредиенты').select('*').eq('recipe_id', id);
+            
+            document.getElementById('recipe-content').innerHTML = `
+                <h2 class="text-3xl font-black mb-4">${rec.название}</h2>
+                <div class="bg-blue-50 p-5 rounded-3xl mb-6">
+                    <p class="text-sm font-bold text-blue-500 mb-3 uppercase">Нужные продукты:</p>
+                    ${ingrs?.map(i => `<div class="flex justify-between text-sm border-b border-blue-100 py-1"><span>${i.название_товара || i.ingredient_name || 'Продукт'}</span><b>${i.количество || i.amount || ''}</b></div>`).join('') || 'Нет состава'}
+                </div>
+                <p class="text-gray-700">${rec.описание || 'Инструкция не добавлена'}</p>
+            `;
+        }
+
+        function renderShopping(data) {
+            const list = document.getElementById('shopping-list');
+            list.innerHTML = data.length ? data.map(item => `
+                <div class="p-4 bg-white rounded-2xl border flex items-center gap-3">
+                    <input type="checkbox" class="w-5 h-5 accent-blue-500">
+                    <span class="font-medium">${item.продукт || item.название_товара}</span>
+                </div>
+            `).join('') : '<p class="text-center text-gray-400">Список пуст</p>';
+        }
+
+        async function addIngredient() {
+            const name = document.getElementById('ing-name').value;
+            const price = document.getElementById('ing-price').value;
+            const unit = document.getElementById('ing-unit').value;
+            if(!name || !price) return;
+            const { error } = await supabase.from('products').insert([{ name, price: parseFloat(price), unit }]);
+            if(!error) { 
+                document.getElementById('ing-name').value = '';
+                loadData('products', renderIngredients); 
+            }
+        }
+
+        nav('main');
+    </script>
+</body>
+</html>
