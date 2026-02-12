@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>projectCook - Cloud Professional</title>
+    <title>projectCook - Cloud Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; padding-bottom: 90px; }
         .tg-button { background-color: #007aff; color: white; transition: all 0.2s; }
-        .tg-button:active { transform: scale(0.98); }
+        .tg-button:active { transform: scale(0.98); opacity: 0.9; }
         .tab-active { color: #007aff; border-bottom: 3px solid #007aff; }
         .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; padding: 12px; z-index: 100; }
@@ -23,7 +23,7 @@
     <header class="flex items-center justify-between mb-6 px-1">
         <div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight">projectCook</h1>
-            <p id="sub-title" class="text-[10px] text-blue-500 font-bold uppercase tracking-widest font-mono">Status: Connected ☁️</p>
+            <p id="sub-title" class="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Connected ☁️</p>
         </div>
         <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-right">
             <p class="text-[9px] text-gray-400 uppercase font-bold">Общая сумма</p>
@@ -40,28 +40,19 @@
                     <input id="prod-unit" type="text" placeholder="Ед. (кг/шт)" class="w-1/3 p-4 bg-gray-50 border-none rounded-2xl outline-none">
                     <input id="prod-price" type="number" placeholder="Цена (₽)" class="w-2/3 p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold text-blue-600">
                 </div>
-                <button onclick="saveIngredient()" id="add-btn" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-100">Добавить в базу</button>
+                <button onclick="saveIngredient()" id="add-btn" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-lg">Добавить в базу</button>
             </div>
         </section>
 
-        <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest">Список продуктов из Supabase</h2>
+        <h2 class="text-xs font-bold text-gray-400 uppercase mb-4 ml-2 tracking-widest text-center">Список продуктов из Supabase</h2>
         <div id="ingredient-list" class="space-y-3">
-            <p class="text-center py-10 text-gray-400 text-sm italic">Загрузка...</p>
+            <p class="text-center py-10 text-gray-400 text-sm italic">Загрузка данных...</p>
         </div>
-
-        <button onclick="openSupabase()" class="mt-8 w-full p-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-            <span>⚙️ Управление таблицей products</span>
-        </button>
     </main>
 
     <main id="tab-recipes" class="hidden">
         <section class="mb-8 bg-white rounded-[32px] p-6 card-shadow border border-gray-100">
-            <h2 class="text-sm font-bold text-gray-800 mb-4">Создать рецепт</h2>
-            <div class="space-y-4">
-                <input id="rec-name" type="text" placeholder="Название блюда" class="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-medium text-gray-700">
-                <textarea id="rec-desc" placeholder="Описание..." class="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-medium text-sm h-20"></textarea>
-                <button onclick="saveRecipe()" id="rec-btn" class="tg-button w-full p-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-100">Сохранить</button>
-            </div>
+            <h2 class="text-sm font-bold text-gray-800 mb-4 text-center italic">Раздел рецептов скоро появится...</h2>
         </section>
         <div id="recipe-list" class="space-y-3"></div>
     </main>
@@ -88,88 +79,92 @@
             document.getElementById('tab-recipes').classList.toggle('hidden', tab !== 'recipes');
             document.getElementById('btn-ing').classList.toggle('tab-active', tab === 'ingredients');
             document.getElementById('btn-rec').classList.toggle('tab-active', tab === 'recipes');
-            if(tab === 'recipes') loadRecipes(); else loadIngredients();
+            if(tab === 'ingredients') loadIngredients();
         }
 
         async function loadIngredients() {
-            const { data, error } = await supabase.from('products').select('*').order('name', { ascending: true });
-            if (error) { tg.showAlert("Ошибка: " + error.message); return; }
+            const list = document.getElementById('ingredient-list');
+            
+            // УБРАЛИ фильтр по user_id, так как этой колонки нет в вашей базе
+            const { data, error } = await supabase
+                .from('products')
+                .select('id, name, price, unit, category')
+                .order('name', { ascending: true });
+
+            if (error) {
+                list.innerHTML = `<p class="text-center text-red-500 p-4">Ошибка: ${error.message}</p>`;
+                return;
+            }
             renderIngredients(data || []);
         }
 
         async function saveIngredient() {
+            const btn = document.getElementById('add-btn');
             const name = document.getElementById('prod-name').value;
             const unit = document.getElementById('prod-unit').value;
             const price = document.getElementById('prod-price').value;
-            if(!name || !price) return;
 
-            const { error } = await supabase.from('products').insert([{ name, price: parseFloat(price), unit }]);
-            if(!error) {
+            if(!name || !price) return tg.showAlert("Заполните Название и Цену!");
+
+            btn.disabled = true;
+            btn.innerText = "Сохранение...";
+
+            // Сохраняем в таблицу products (убрали user_id)
+            const { error } = await supabase.from('products').insert([{ 
+                name: name, 
+                price: parseFloat(price), 
+                unit: unit 
+            }]);
+
+            if (error) {
+                tg.showAlert("Ошибка сохранения: " + error.message);
+            } else {
                 document.getElementById('prod-name').value = '';
+                document.getElementById('prod-unit').value = '';
                 document.getElementById('prod-price').value = '';
                 loadIngredients();
                 tg.HapticFeedback.notificationOccurred('success');
             }
+            btn.disabled = false;
+            btn.innerText = "Добавить в базу";
         }
 
         function renderIngredients(items) {
             const list = document.getElementById('ingredient-list');
             let total = 0;
-            list.innerHTML = '';
+            list.innerHTML = items.length === 0 ? '<p class="text-center py-10 text-gray-400 italic">База пуста</p>' : '';
+            
             items.forEach(item => {
                 total += parseFloat(item.price || 0);
                 list.innerHTML += `
                 <div class="flex justify-between items-center p-4 bg-white rounded-2xl card-shadow border border-gray-50 animate-item">
                     <div>
                         <h3 class="font-bold text-gray-800">${item.name}</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">${item.unit || 'ед.'} • ${item.category || 'Без категории'}</p>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase">${item.unit || ''} ${item.category ? '• ' + item.category : ''}</p>
                     </div>
                     <div class="text-right">
                         <p class="font-black text-gray-900">${item.price} ₽</p>
-                        <button onclick="deleteItem('${item.id}', 'products')" class="text-[10px] text-red-300 font-bold">Удалить</button>
+                        <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-300 font-bold">Удалить</button>
                     </div>
                 </div>`;
             });
             document.getElementById('total-val').innerText = total.toLocaleString() + ' ₽';
         }
 
-        async function loadRecipes() {
-            const { data } = await supabase.from('recipes').select('*');
-            const list = document.getElementById('recipe-list');
-            list.innerHTML = '';
-            if(!data || data.length === 0) { list.innerHTML = '<p class="text-center py-10 text-gray-400">Рецептов пока нет</p>'; return; }
-            data.forEach(rec => {
-                list.innerHTML += `
-                <div class="p-5 bg-white rounded-2xl card-shadow border border-blue-50 animate-item">
-                    <h3 class="font-black text-gray-800 text-lg">${rec.name || rec.название}</h3>
-                    <p class="text-gray-400 text-sm mt-1">${rec.description || rec.описание || ''}</p>
-                    <div class="mt-4 pt-4 border-t border-gray-50 flex justify-between">
-                        <span class="text-[10px] font-bold text-blue-500 uppercase">Рецепт</span>
-                        <button onclick="deleteItem('${rec.id}', 'recipes')" class="text-red-300 text-xs">Удалить</button>
-                    </div>
-                </div>`;
-            });
+        async function deleteItem(id) {
+            const { error } = await supabase.from('products').delete().eq('id', id);
+            if(!error) {
+                loadIngredients();
+                tg.HapticFeedback.impactOccurred('medium');
+            } else {
+                tg.showAlert("Ошибка удаления: " + error.message);
+            }
         }
 
-        async function saveRecipe() {
-            const name = document.getElementById('rec-name').value;
-            const desc = document.getElementById('rec-desc').value;
-            if(!name) return;
-            await supabase.from('recipes').insert([{ name, description: desc }]);
-            document.getElementById('rec-name').value = '';
-            document.getElementById('rec-desc').value = '';
-            loadRecipes();
-        }
-
-        async function deleteItem(id, table) {
-            const { error } = await supabase.from(table).delete().eq('id', id);
-            if(!error) { if(table === 'products') loadIngredients(); else loadRecipes(); }
-        }
-
-        function openSupabase() { tg.openLink('https://supabase.com/dashboard/project/fwgxtjkqmslbmnecfhwj/editor/products'); }
-
+        // Запуск при старте
         loadIngredients();
     </script>
 </body>
 </html>
+
 
